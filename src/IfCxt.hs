@@ -34,13 +34,13 @@ mkIfCxtInstances :: Name -> Q [Dec]
 mkIfCxtInstances n = do
     info <- reify ''IfCxt
     let instancesOfIfCxt = case info of
-            ClassI _ xs -> map (\(InstanceD _ (AppT _ t) _) -> t) xs
+            ClassI _ xs -> map (\(InstanceD _ _ (AppT _ t) _) -> t) xs
 
         isInstanceOfIfCxt t = t `elem` instancesOfIfCxt
 
     info <- reify n
     case info of
-        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD cxt (AppT classt t) ys) -> return $
+        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD _ cxt (AppT classt t) ys) -> return $
             if isInstanceOfIfCxt (AppT classt t)
                then []
                else mkInstance cxt classt t n
@@ -49,6 +49,7 @@ mkIfCxtInstances n = do
 mkInstance :: Cxt -> Type -> Type -> Name -> [Dec]
 mkInstance cxt classt t n = [
     InstanceD
+        Nothing
         (map relaxCxt cxt)
         (relaxCxt (AppT (ConT n) t))
         [ FunD 'ifCxt
